@@ -20,18 +20,18 @@ import javax.inject.Inject
 @Slf4j
 class LedgerUpdateTransactionHandler implements Handler {
 
-    private final String executorUrl
+    private final DBTConfig config
 
     @Inject
     LedgerUpdateTransactionHandler(DBTConfig config) {
-        executorUrl = config.executor.remoteUrl
+        this.config = config
     }
 
     @Override
     void handle(Context ctx) throws Exception {
         ctx.with {
             if(ctx.request.method == HttpMethod.POST) {
-                if(!executorUrl) {
+                if(!config.executor.remoteUrl) {
                     throw new RuntimeException("Executor URL is not set, cannot update transaction")
                 }
 
@@ -46,9 +46,9 @@ class LedgerUpdateTransactionHandler implements Handler {
                             log.info "Transaction $transaction.id exists, updating transaction"
                             ledgerService.updateTransaction(session, transaction).then {
                                 log.info("Transaction $it updated in ledger")
-                                if(transaction.completed){
-                                    log.info("Sending transaction $transaction.id to executor at $executorUrl")
-                                    redirect(executorUrl)
+                                if(transaction.completed && !transaction.executed){
+                                    log.info("Sending transaction $transaction.id to executor at $config.executor.remoteUrl")
+                                    redirect(config.executor.remoteUrl)
                                 } else {
                                     render(Jackson.json(transaction))
                                 }
@@ -57,9 +57,9 @@ class LedgerUpdateTransactionHandler implements Handler {
                             log.info("Creating new transaction")
                             ledgerService.newTransaction(session, transaction).then {
                                 log.info("Transaction $it added to ledger")
-                                if(transaction.completed){
-                                    log.info("Sending transaction $transaction.id to executor at $executorUrl")
-                                    redirect(executorUrl)
+                                if(transaction.completed && !transaction.executed){
+                                    log.info("Sending transaction $transaction.id to executor at $config.executor.remoteUrl")
+                                    redirect(config.executor.remoteUrl)
                                 } else {
                                     render(Jackson.json(transaction))
                                 }

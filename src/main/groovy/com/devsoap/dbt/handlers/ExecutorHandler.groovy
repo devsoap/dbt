@@ -1,5 +1,6 @@
 package com.devsoap.dbt.handlers
 
+import com.devsoap.dbt.config.DBTConfig
 import com.devsoap.dbt.data.BlockTransaction
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -9,13 +10,26 @@ import ratpack.exec.Promise
 import ratpack.handling.Context
 import ratpack.handling.Handler
 import ratpack.http.Status
+import ratpack.http.client.HttpClient
 import ratpack.jdbctx.Transaction
 
+import javax.inject.Inject
 import javax.sql.DataSource
 import java.sql.ResultSet
 
 @Slf4j
 class ExecutorHandler implements Handler {
+
+    private final DBTConfig config
+    private final HttpClient client
+    private final ObjectMapper mapper
+
+    @Inject
+    ExecutorHandler(DBTConfig config, HttpClient client, ObjectMapper mapper) {
+        this.mapper = mapper
+        this.client = client
+        this.config = config
+    }
 
     @Override
     void handle(Context ctx) throws Exception {
@@ -31,6 +45,18 @@ class ExecutorHandler implements Handler {
 
             executeCommands(ds, mapper, transaction).then {
                 transaction.executed = true
+
+                // Notify ledger of result
+                log.info("Updating ledger with execution result")
+                client.post(config.ledger.remoteUrl.toURI(), { spec ->
+                    spec.body.text(mapper.writeValueAsString(transaction))
+                }).then {
+                    if(it.status != Status.OK) {
+                        log.error("Failed to update ledger with execution result for transaction $transaction.id")
+                    }
+                }
+
+                // Return transaction with result
                 ctx.response.send(mapper.writeValueAsString(transaction))
             }
         }
