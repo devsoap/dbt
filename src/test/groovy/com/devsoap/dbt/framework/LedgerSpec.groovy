@@ -1,32 +1,40 @@
 package com.devsoap.dbt.framework
 
-import com.devsoap.dbt.BlockTransaction
-import com.devsoap.dbt.handlers.LedgerHandler
+import com.devsoap.dbt.data.BlockTransaction
+
 import com.fasterxml.jackson.databind.ObjectMapper
 import groovy.json.JsonSlurper
 import ratpack.groovy.test.GroovyRatpackMainApplicationUnderTest
+import ratpack.impose.Imposition
+import ratpack.impose.Impositions
+import ratpack.impose.ImpositionsSpec
+import ratpack.impose.ServerConfigImposition
+import ratpack.server.RatpackServer
 import spock.lang.AutoCleanup
+import spock.lang.Shared
 import spock.lang.Specification
 
 class LedgerSpec extends Specification {
 
     def mapper = new ObjectMapper()
-    def jsonSlurper = new JsonSlurper()
+
+    def PATH = 'ledger'
 
     @AutoCleanup
-    def aut = new GroovyRatpackMainApplicationUnderTest()
+    GroovyRatpackMainApplicationUnderTest aut = new CustomPortMainApplicationUnderTest(8888)
 
     void 'transaction sent to ledger'() {
         setup:
             def transaction = new BlockTransaction()
             transaction.execute("SELECT * FROM LOGS")
         when:
-            def response = mapper.readValue(aut.httpClient.requestSpec { spec ->
+            String json = aut.httpClient.requestSpec{ spec ->
                 spec.body.text(mapper.writeValueAsString(transaction))
-            }.post(LedgerHandler.PATH).body.text, BlockTransaction)
+            }.postText(PATH)
+            def recievedTransaction = mapper.readValue(json, BlockTransaction)
         then:
-            response.id == transaction.id
-            response.completed == false
+            recievedTransaction.id == transaction.id
+            !recievedTransaction.completed
     }
 
     void 'completed transaction marked as completed'() {
@@ -35,12 +43,13 @@ class LedgerSpec extends Specification {
             transaction.execute("SELECT * FROM LOGS")
             transaction.end()
         when:
-            def response = mapper.readValue(aut.httpClient.requestSpec { spec ->
+            String json = aut.httpClient.requestSpec{ spec ->
                 spec.body.text(mapper.writeValueAsString(transaction))
-            }.post(LedgerHandler.PATH).body.text, BlockTransaction)
+            }.postText(PATH)
+            def recievedTransaction = mapper.readValue(json, BlockTransaction)
         then:
-            response.id == transaction.id
-            response.completed == true
+            recievedTransaction.id == transaction.id
+            recievedTransaction.completed
     }
 
     void 'completed transaction sent to executor from ledger'() {
@@ -51,7 +60,7 @@ class LedgerSpec extends Specification {
         when:
             def response = mapper.readValue(aut.httpClient.requestSpec { spec ->
                 spec.body.text(mapper.writeValueAsString(transaction))
-            }.post(LedgerHandler.PATH).body.text, BlockTransaction)
+            }.post(PATH).body.text, BlockTransaction)
         then:
             response.id == transaction.id
             response.executed == true
@@ -66,13 +75,16 @@ class LedgerSpec extends Specification {
             transaction.execute("SELECT * FROM LOGS")
             transaction.end()
         when:
-            def response = mapper.readValue(aut.httpClient.requestSpec { spec ->
+            String json = aut.httpClient.requestSpec{ spec ->
                 spec.body.text(mapper.writeValueAsString(transaction))
-            }.post(LedgerHandler.PATH).body.text, BlockTransaction)
-            def json = jsonSlurper.parseText(response.queries[1].result)
+            }.postText(PATH)
+            def recievedTransaction = mapper.readValue(json, BlockTransaction)
+            def result = recievedTransaction.queries[1].result
         then:
-            response.id == transaction.id
-            json.LOG_ID.first() == 1
-            json.LOG_VALUE.first() == 'HELLO'
+            recievedTransaction.id == transaction.id
+            recievedTransaction.queries.first().result == null // insert query has no result
+
+            result['LOG_ID'].first() == 1
+            result['LOG_VALUE'].first() == 'HELLO'
     }
 }

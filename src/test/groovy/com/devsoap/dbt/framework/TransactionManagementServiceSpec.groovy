@@ -2,23 +2,24 @@ package com.devsoap.dbt.framework
 
 import com.devsoap.dbt.data.BlockTransaction
 import com.fasterxml.jackson.databind.ObjectMapper
+import ratpack.groovy.test.GroovyRatpackMainApplicationUnderTest
 import spock.lang.AutoCleanup
 import spock.lang.Specification
 
-class ExecutorSpec extends Specification {
+class TransactionManagementServiceSpec extends Specification {
+
 
     def mapper = new ObjectMapper()
 
-    def PATH = 'executor'
+    def PATH = 'ledger'
 
     @AutoCleanup
-    def aut = new CustomPortMainApplicationUnderTest(8888)
+    GroovyRatpackMainApplicationUnderTest aut = new CustomPortMainApplicationUnderTest(8888)
 
-    void 'transaction sent to executor'() {
+    void 'transaction sent to ledger'() {
         setup:
             def transaction = new BlockTransaction()
             transaction.execute("SELECT * FROM LOGS")
-            transaction.end()
         when:
             String json = aut.httpClient.requestSpec{ spec ->
                 spec.body.text(mapper.writeValueAsString(transaction))
@@ -26,10 +27,7 @@ class ExecutorSpec extends Specification {
             def recievedTransaction = mapper.readValue(json, BlockTransaction)
         then:
             recievedTransaction.id == transaction.id
-            recievedTransaction.completed
-            recievedTransaction.executed
+            !recievedTransaction.completed
     }
-
-
 
 }

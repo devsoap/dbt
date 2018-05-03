@@ -1,10 +1,10 @@
 package com.devsoap.dbt.handlers
 
-import com.devsoap.dbt.BlockTransaction
+import com.devsoap.dbt.data.BlockTransaction
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ArrayNode
-import groovy.util.logging.Log
+import groovy.util.logging.Slf4j
 import ratpack.exec.Promise
 import ratpack.handling.Context
 import ratpack.handling.Handler
@@ -14,10 +14,8 @@ import ratpack.jdbctx.Transaction
 import javax.sql.DataSource
 import java.sql.ResultSet
 
-@Log
+@Slf4j
 class ExecutorHandler implements Handler {
-
-    static final String PATH = 'executor'
 
     @Override
     void handle(Context ctx) throws Exception {
@@ -27,7 +25,7 @@ class ExecutorHandler implements Handler {
             def transaction = mapper.readValue(body.text, BlockTransaction)
 
             if(!validateChain(transaction)) {
-                ctx.response.status = Status.of(400, 'Transaction chain invalid')
+                ctx.response.status(Status.of(400, 'Transaction chain invalid'))
                 return
             }
 
@@ -38,25 +36,38 @@ class ExecutorHandler implements Handler {
         }
     }
 
-    boolean validateChain(BlockTransaction transaction) {
-        //FIXME
+    private static boolean validateChain(BlockTransaction transaction) {
+        if(transaction.queries[0].parent != transaction.id) {
+            return false
+        }
+        for(int i=1; i<transaction.queries.size(); i++) {
+            def query = transaction.queries[i]
+            def prev = transaction.queries[i-1]
+            if(query.id != query.generateHash()) {
+                return false
+            }
+            if(query.parent != prev.generateHash()) {
+                return false
+            }
+        }
         true
     }
 
-    Promise<BlockTransaction> executeCommands(DataSource ds, ObjectMapper mapper, BlockTransaction transaction) {
+    private static Promise<BlockTransaction> executeCommands(DataSource ds, ObjectMapper mapper, BlockTransaction transaction) {
         def txDs = Transaction.dataSource(ds)
         def tx = Transaction.create { ds.connection }
         tx.wrap {
             Promise.sync {
                 transaction.queries.each { block ->
-                    log.info "Executing $block.data ..."
-                    if(block.data.toLowerCase().startsWith("select")){
+                    log.info "Executing $block.query ..."
+                    if(block.query.toLowerCase().startsWith("select")){
+                        log.info('Saving result from Select query')
                         def result = txDs.connection
                                 .createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE)
-                                .executeQuery(block.data)
-                        block.result = toJson(mapper, result)
+                                .executeQuery(block.query)
+                        block.result = toMap(result)
                     } else {
-                        txDs.connection.createStatement().execute(block.data)
+                        txDs.connection.createStatement().execute(block.query)
                     }
                 }
                 transaction
@@ -64,30 +75,26 @@ class ExecutorHandler implements Handler {
         }
     }
 
-    private static JsonNode toJson(ObjectMapper mapper, ResultSet resultSet) {
-        def json = mapper.createObjectNode()
+    private static Map toMap(ResultSet resultSet) {
+        def map = [:]
 
         if(resultSet.last()) {
-            int rows = resultSet.row
-            log.info("Converting $rows rows to json")
             resultSet.beforeFirst()
-
             resultSet.metaData.columnCount.times { column ->
                 def columnIndex = column + 1
                 def columnName = resultSet.metaData.getColumnName(columnIndex)
-                ArrayNode columnValue = json.get(columnName)
-                if(!columnValue) {
-                    columnValue = mapper.createArrayNode()
-                    json.set(columnName, columnValue)
+
+                def columnValues = map[columnName] as List
+                if(columnValues == null) {
+                    map[columnName] = columnValues = []
                 }
 
                 resultSet.beforeFirst()
                 while(resultSet.next()) {
-                    columnValue.addPOJO(resultSet.getObject(columnIndex))
+                   columnValues << resultSet.getObject(columnIndex)
                 }
             }
         }
-        //mapper.writeValueAsString(json)
-        mapper.valueToTree(json)
+        map
     }
 }

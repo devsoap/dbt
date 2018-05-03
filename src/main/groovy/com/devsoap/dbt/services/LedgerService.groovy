@@ -1,33 +1,35 @@
 package com.devsoap.dbt.services
 
-import com.devsoap.dbt.BlockTransaction
-import groovy.util.logging.Log
+import com.devsoap.dbt.data.BlockTransaction
+import com.devsoap.dbt.data.LedgerData
+import groovy.util.logging.Slf4j
+import ratpack.exec.Promise
 import ratpack.service.Service
-import ratpack.service.StartEvent
-import ratpack.service.StopEvent
+import ratpack.session.Session
 
-@Log
+@Slf4j
 class LedgerService implements Service {
 
-    static final transient List<BlockTransaction> transactions = []
+    private static final LedgerData data = new LedgerData()
 
-    BlockTransaction fetchTransaction(String transactionId) {
-        log.info("Fetching transaction $transactionId")
-        log.info("Transactions:$transactions")
-        transactions.find {it.id == transactionId}
+    Promise<Optional<BlockTransaction>> fetchTransaction(Session session, String transactionId) {
+        Promise.value(Optional.ofNullable(data.transactions.find {it.id == transactionId}))
     }
 
-    String newTransaction(BlockTransaction transaction) {
-        log.info("Adding new transaction $transaction.id")
-        transactions << transaction
-        transaction.id
+    Promise<List<BlockTransaction>> allTransactions(Session session) {
+        Promise.value(data.transactions)
     }
 
-    String updateTransaction(BlockTransaction transaction) {
-        log.info("Updating transaction $transaction.id")
-        def existingTransaction = fetchTransaction(transaction.id)
-        def index = transactions.indexOf(existingTransaction)
-        transactions.remove(index)
-        transactions.add(index, transaction)
+    Promise<String> newTransaction(Session session, BlockTransaction transaction) {
+        log.info("Adding new transaction $transaction.id to session ${session.id}")
+        data.transactions.add(transaction)
+        Promise.value(transaction.id)
+    }
+
+    Promise<String> updateTransaction(Session session, BlockTransaction transaction) {
+        log.info("Updating transaction $transaction.id in session ${session.id}")
+        data.transactions.removeAll {it.id == transaction.id}
+        data.transactions.add(transaction)
+        Promise.value(transaction.id)
     }
 }

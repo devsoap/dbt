@@ -1,6 +1,6 @@
 package com.devsoap.dbt.config
 
-class LedgerConfig {
-    String path = 'ledger'
+class ExecutorConfig {
+    String path = 'executor'
     String remoteUrl
 }

@@ -1,50 +1,63 @@
-package com.devsoap.dbt
+package com.devsoap.dbt.services
 
 import com.devsoap.dbt.config.DBTConfig
+import com.devsoap.dbt.data.BlockTransaction
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import groovy.util.logging.Log
+import groovy.util.logging.Slf4j
 import ratpack.exec.Promise
+import ratpack.http.Status
 import ratpack.http.client.HttpClient
 import ratpack.service.Service
 
 import javax.inject.Inject
 
-@Log
-class DBTManager implements Service {
-
-    private final String ledgerUrl
+@Slf4j
+class TransactionManagerService implements Service {
     private final HttpClient httpClient
     private final ObjectMapper mapper
+    private final DBTConfig config
 
     @Inject
-    DBTManager(DBTConfig config, HttpClient httpClient, ObjectMapper mapper){
-        ledgerUrl = config.ledger.url
+    TransactionManagerService(DBTConfig config, HttpClient httpClient, ObjectMapper mapper){
+        this.config = config
         this.httpClient = httpClient
         this.mapper = mapper
     }
 
     Promise<JsonNode> execute(ExecuteQuery queryBuilder) {
-        log.info("Executing new transaction")
-        def builder = new TransactionBuilder(this)
+        if(!config.ledger.remoteUrl) {
+            throw new RuntimeException("Ledger remote url is not set, cannot execute query")
+        }
+
+        def builder = new TransactionBuilder()
         queryBuilder.build(builder)
         def transaction = builder.build()
 
-        log.info("Sending transaction $transaction.id to ledger")
-        httpClient.post(ledgerUrl.toURI(), { spec ->
+        log.info("Sending transaction $transaction.id to ledger at $config.ledger.remoteUrl")
+        httpClient.post(config.ledger.remoteUrl.toURI(), { spec ->
             spec.body.text(mapper.writeValueAsString(transaction))
-        }).flatMap { response ->
-            Promise.value(mapper.readTree(response.body.text))
+        }).onError {
+            log.error("Failed to send transaction $transaction.id to ledger $config.ledger.remoteUrl")
+        }.map { response ->
+            if(response.status == Status.OK) {
+                mapper.readTree(response.body.text)
+            }
         }
     }
 
     Promise<JsonNode> execute(String transactionId, ExecuteQuery queryBuilder) {
-        log.info("Amending existing transaction $transactionId")
+        if(!config.ledger.remoteUrl) {
+            throw new RuntimeException("Ledger remote url is not set, cannot execute query")
+        }
 
-        log.info("Getting transaction $transactionId from ledger")
-        httpClient.get(ledgerUrl.toURI(), { spec ->
+        log.info("Sending transaction $transactionId to ledger at $config.ledger.remoteUrl")
+        httpClient.get(config.ledger.remoteUrl.toURI(), { spec ->
             spec.headers.add('X-Transaction-Id', transactionId)
         }).flatMap { response ->
+            if(response.status != Status.OK) {
+                throw new RuntimeException("Server returned ${response.statusCode} ${response.status.message}")
+            }
             def oldTransaction = mapper.readValue(response.body.text, BlockTransaction)
             if(oldTransaction == null) {
                 throw new RuntimeException("Transaction with id $transactionId could not be found")
@@ -53,7 +66,8 @@ class DBTManager implements Service {
                 throw new RuntimeException("Cannot modify a completed transaction")
             }
 
-            def builder = new TransactionBuilder(this, oldTransaction)
+            log.info("Updating transaction $transactionId content with new query")
+            def builder = new TransactionBuilder(oldTransaction)
             queryBuilder.build(builder)
             def transaction = builder.build()
 
@@ -61,12 +75,14 @@ class DBTManager implements Service {
                 throw new RuntimeException("Transaction id changed")
             }
 
-            log.info("Sending transaction $transactionId to ledger")
-            httpClient.post(ledgerUrl.toURI(), { spec ->
+            log.info("Sending updated transaction $transaction.id to ledger at $config.ledger.remoteUrl")
+            httpClient.post(config.ledger.remoteUrl.toURI(), { spec ->
                 spec.body.text(mapper.writeValueAsString(transaction))
-            })
-        }.flatMap { response ->
-            Promise.value(mapper.readTree(response.body.text))
+            }).onError {
+                log.error("Failed to send transaction $transaction.id to ledger $config.ledger.remoteUrl")
+            }
+        }.map { response ->
+            mapper.readTree(response.body.text)
         }
     }
 
@@ -74,16 +90,13 @@ class DBTManager implements Service {
 
         private final List<String> queries = []
 
-        private final DBTManager manager
-
         private final BlockTransaction transaction
 
-        private TransactionBuilder(DBTManager manager){
-            this(manager, new BlockTransaction())
+        private TransactionBuilder() {
+            this.transaction = new BlockTransaction()
         }
 
-        private TransactionBuilder(DBTManager manager, BlockTransaction transaction) {
-            this.manager = manager
+        private TransactionBuilder(BlockTransaction transaction) {
             this.transaction = transaction
         }
 

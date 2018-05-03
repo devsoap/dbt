@@ -21,6 +21,7 @@ repositories {
 dependencies {
   compile ratpack.dependency('h2')
   compile ratpack.dependency('jdbc-tx')
+  compile ratpack.dependency('session')
   compile 'org.flywaydb:flyway-core:5.0.7'
   runtime 'org.slf4j:slf4j-simple:1.7.25'
 
