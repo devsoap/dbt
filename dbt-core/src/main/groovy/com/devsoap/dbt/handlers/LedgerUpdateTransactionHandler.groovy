@@ -2,18 +2,13 @@ package com.devsoap.dbt.handlers
 
 import com.devsoap.dbt.config.DBTConfig
 import com.devsoap.dbt.data.BlockTransaction
-import com.devsoap.dbt.data.LedgerData
 import com.devsoap.dbt.services.LedgerService
 import com.fasterxml.jackson.databind.ObjectMapper
-import groovy.util.logging.Log
 import groovy.util.logging.Slf4j
-import ratpack.config.ConfigData
 import ratpack.handling.Context
 import ratpack.handling.Handler
 import ratpack.http.HttpMethod
 import ratpack.jackson.Jackson
-import ratpack.server.ServerConfig
-import ratpack.session.Session
 
 import javax.inject.Inject
 
@@ -36,15 +31,14 @@ class LedgerUpdateTransactionHandler implements Handler {
                 }
 
                 def ledgerService = get(LedgerService)
-                def session = get(Session)
                 request.body.then { body ->
                     def mapper = get(ObjectMapper)
                     def transaction = mapper.readValue(body.text, BlockTransaction)
                     log.info("Recieved transaction $transaction.id")
-                    ledgerService.fetchTransaction(session,transaction.id).then {
+                    ledgerService.fetchTransaction(transaction.id).then {
                         if(it.present) {
                             log.info "Transaction $transaction.id exists, updating transaction"
-                            ledgerService.updateTransaction(session, transaction).then {
+                            ledgerService.updateTransaction(transaction).then {
                                 log.info("Transaction $it updated in ledger")
                                 if(transaction.completed && !transaction.executed){
                                     log.info("Sending transaction $transaction.id to executor at $config.executor.remoteUrl")
@@ -55,7 +49,7 @@ class LedgerUpdateTransactionHandler implements Handler {
                             }
                         } else {
                             log.info("Creating new transaction")
-                            ledgerService.newTransaction(session, transaction).then {
+                            ledgerService.newTransaction(transaction).then {
                                 log.info("Transaction $it added to ledger")
                                 if(transaction.completed && !transaction.executed){
                                     log.info("Sending transaction $transaction.id to executor at $config.executor.remoteUrl")

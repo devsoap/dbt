@@ -2,9 +2,7 @@ package com.devsoap.dbt.handlers
 
 import com.devsoap.dbt.config.DBTConfig
 import com.devsoap.dbt.data.BlockTransaction
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.node.ArrayNode
 import groovy.util.logging.Slf4j
 import ratpack.exec.Promise
 import ratpack.handling.Context
@@ -43,7 +41,7 @@ class ExecutorHandler implements Handler {
                 return
             }
 
-            executeCommands(ds, mapper, transaction).then {
+            executeCommands(ds, transaction).then {
                 transaction.executed = true
 
                 // Notify ledger of result
@@ -79,7 +77,7 @@ class ExecutorHandler implements Handler {
         true
     }
 
-    private static Promise<BlockTransaction> executeCommands(DataSource ds, ObjectMapper mapper, BlockTransaction transaction) {
+    private static Promise<BlockTransaction> executeCommands(DataSource ds, BlockTransaction transaction) {
         def txDs = Transaction.dataSource(ds)
         def tx = Transaction.create { ds.connection }
         tx.wrap {

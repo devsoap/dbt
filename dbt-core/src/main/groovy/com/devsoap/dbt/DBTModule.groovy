@@ -16,7 +16,6 @@ import groovy.util.logging.Slf4j
 import ratpack.guice.ConfigurableModule
 import ratpack.handling.HandlerDecorator
 import ratpack.server.ServerConfig
-import ratpack.session.Session
 
 @Slf4j
 class DBTModule extends ConfigurableModule<DBTConfig> {

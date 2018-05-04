@@ -5,7 +5,6 @@ dependencies {
 
     runtime ratpack.dependency('h2')
     runtime ratpack.dependency('jdbc-tx')
-    runtime ratpack.dependency('session')
 
     compile 'org.flywaydb:flyway-core:5.0.7'
     runtime 'org.slf4j:slf4j-simple:1.7.25'

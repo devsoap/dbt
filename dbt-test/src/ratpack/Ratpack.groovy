@@ -4,7 +4,6 @@ import org.flywaydb.core.Flyway
 import org.h2.jdbcx.JdbcDataSource
 import ratpack.service.Service
 import ratpack.service.StartEvent
-import ratpack.session.SessionModule
 
 import javax.sql.DataSource
 
