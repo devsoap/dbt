@@ -1,4 +1,4 @@
-package com.devsoap.dbt.framework
+package com.devsoap.dbt
 
 import ratpack.groovy.test.GroovyRatpackMainApplicationUnderTest
 import ratpack.impose.Impositions

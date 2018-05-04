@@ -1,4 +1,4 @@
-package com.devsoap.dbt.app
+package com.devsoap.dbt.demo
 
 import org.flywaydb.core.Flyway
 import ratpack.service.Service

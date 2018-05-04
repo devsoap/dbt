@@ -1,4 +1,4 @@
-package com.devsoap.dbt.framework
+package com.devsoap.dbt
 
 import com.devsoap.dbt.data.BlockTransaction
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -7,7 +7,6 @@ import spock.lang.AutoCleanup
 import spock.lang.Specification
 
 class TransactionManagementServiceSpec extends Specification {
-
 
     def mapper = new ObjectMapper()
 

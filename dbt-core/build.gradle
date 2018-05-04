@@ -1,0 +1,6 @@
+
+
+dependencies {
+    compile ratpack.dependency('jdbc-tx')
+    compile ratpack.dependency('session')
+}

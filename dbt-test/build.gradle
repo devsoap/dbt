@@ -1,0 +1,25 @@
+apply plugin: 'org.flywaydb.flyway'
+
+dependencies {
+    testCompile project(':dbt-core')
+    testRuntime project(':dbt-core')
+
+    testCompile ratpack.dependency('h2')
+
+    testRuntime ratpack.dependency('jdbc-tx')
+    testRuntime ratpack.dependency('session')
+
+    testRuntime 'org.flywaydb:flyway-core:5.0.7'
+    testRuntime 'org.slf4j:slf4j-simple:1.7.25'
+
+    testCompile ratpack.dependency('test')
+    testCompile 'org.spockframework:spock-core:1.0-groovy-2.4'
+    testCompile 'cglib:cglib:2.2.2'
+    testCompile 'org.objenesis:objenesis:2.1'
+}
+
+flyway {
+    url = 'jdbc:h2:mem:dbtdb'
+    user = 'SA'
+}
+run.dependsOn(flywayMigrate)

@@ -1,4 +1,4 @@
-package com.devsoap.dbt.framework
+package com.devsoap.dbt
 
 import com.devsoap.dbt.data.BlockTransaction
 

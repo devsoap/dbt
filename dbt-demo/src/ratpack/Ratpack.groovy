@@ -1,12 +1,8 @@
 import com.devsoap.dbt.DBTModule
-import com.devsoap.dbt.app.DatabaseService
+import com.devsoap.dbt.demo.DatabaseService
 import com.devsoap.dbt.config.DBTConfig
-import com.devsoap.dbt.handlers.ExecutorHandler
-
 import com.devsoap.dbt.services.TransactionManagerService
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.h2.jdbcx.JdbcDataSource
-import ratpack.config.ConfigData
 import ratpack.session.SessionModule
 
 import javax.sql.DataSource

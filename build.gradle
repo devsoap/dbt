@@ -1,38 +1,23 @@
 buildscript {
-  repositories {
-    jcenter()
-  }
-  dependencies {
-    classpath "io.ratpack:ratpack-gradle:1.5.1"
-    classpath 'com.h2database:h2:1.4.191'
-  }
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath "io.ratpack:ratpack-gradle:1.5.1"
+    }
 }
 
 plugins {
-  id "org.flywaydb.flyway" version "5.0.7"
-  id "io.ratpack.ratpack-groovy" version "1.5.1"
-  id 'idea'
+    id 'idea'
+    id 'groovy'
+    id "io.ratpack.ratpack-groovy" version "1.5.1"
+    id "org.flywaydb.flyway" version "5.0.7"
 }
 
-repositories {
-  jcenter()
+allprojects {
+    apply plugin: 'io.ratpack.ratpack-groovy'
+    apply plugin: 'idea'
+    repositories {
+        jcenter()
+    }
 }
-
-dependencies {
-  compile ratpack.dependency('h2')
-  compile ratpack.dependency('jdbc-tx')
-  compile ratpack.dependency('session')
-  compile 'org.flywaydb:flyway-core:5.0.7'
-  runtime 'org.slf4j:slf4j-simple:1.7.25'
-
-  testCompile ratpack.dependency('test')
-  testCompile 'org.spockframework:spock-core:1.0-groovy-2.4'
-  testCompile 'cglib:cglib:2.2.2'
-  testCompile 'org.objenesis:objenesis:2.1'
-}
-
-flyway {
-  url = 'jdbc:h2:mem:dbtdb'
-  user = 'SA'
-}
-run.dependsOn(flywayMigrate)
