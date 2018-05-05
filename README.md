@@ -6,6 +6,8 @@ transactions of multiple queries on different nodes and execute them later.
 To ensure the reliability of the transactions a ledger using blockchain is used to keep track on ongoing transactions and
 ensure queries within the transactions are consistent.
 
+[![Build Status](https://travis-ci.org/devsoap/dbt.svg?branch=master)](https://travis-ci.org/devsoap/dbt)
+
 
 ## DBT Core
 
