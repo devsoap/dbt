@@ -18,8 +18,6 @@ ratpack {
 
   bindings {
 
-    module SessionModule
-
     module (DBTModule) {
       it.ledger.remoteUrl = 'http://localhost:8888/ledger'
       it.executor.remoteUrl = 'http://localhost:8888/executor'

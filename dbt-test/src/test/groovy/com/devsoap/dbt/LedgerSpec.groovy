@@ -3,15 +3,8 @@ package com.devsoap.dbt
 import com.devsoap.dbt.data.BlockTransaction
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import groovy.json.JsonSlurper
 import ratpack.groovy.test.GroovyRatpackMainApplicationUnderTest
-import ratpack.impose.Imposition
-import ratpack.impose.Impositions
-import ratpack.impose.ImpositionsSpec
-import ratpack.impose.ServerConfigImposition
-import ratpack.server.RatpackServer
 import spock.lang.AutoCleanup
-import spock.lang.Shared
 import spock.lang.Specification
 
 class LedgerSpec extends Specification {
@@ -41,7 +34,7 @@ class LedgerSpec extends Specification {
         setup:
             def transaction = new BlockTransaction()
             transaction.execute("SELECT * FROM LOGS")
-            transaction.end()
+            transaction.commit()
         when:
             String json = aut.httpClient.requestSpec{ spec ->
                 spec.body.text(mapper.writeValueAsString(transaction))
@@ -56,7 +49,7 @@ class LedgerSpec extends Specification {
         setup:
             def transaction = new BlockTransaction()
             transaction.execute("SELECT * FROM LOGS")
-            transaction.end()
+            transaction.commit()
         when:
             def response = mapper.readValue(aut.httpClient.requestSpec { spec ->
                 spec.body.text(mapper.writeValueAsString(transaction))
@@ -73,7 +66,7 @@ class LedgerSpec extends Specification {
             def transaction = new BlockTransaction()
             transaction.execute("INSERT INTO LOGS(LOG_ID,LOG_VALUE) VALUES (1, 'HELLO')")
             transaction.execute("SELECT * FROM LOGS")
-            transaction.end()
+            transaction.commit()
         when:
             String json = aut.httpClient.requestSpec{ spec ->
                 spec.body.text(mapper.writeValueAsString(transaction))

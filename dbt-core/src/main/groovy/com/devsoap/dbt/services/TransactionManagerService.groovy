@@ -128,7 +128,7 @@ class TransactionManagerService implements Service {
         }
 
         TransactionBuilder complete() {
-            transaction.end()
+            transaction.commit()
             this
         }
 

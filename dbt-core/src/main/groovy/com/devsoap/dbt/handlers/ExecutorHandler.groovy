@@ -5,10 +5,12 @@ import com.devsoap.dbt.data.BlockTransaction
 import com.fasterxml.jackson.databind.ObjectMapper
 import groovy.util.logging.Slf4j
 import ratpack.exec.Promise
+import ratpack.func.Pair
 import ratpack.handling.Context
 import ratpack.handling.Handler
 import ratpack.http.Status
 import ratpack.http.client.HttpClient
+import ratpack.http.client.ReceivedResponse
 import ratpack.jdbctx.Transaction
 
 import javax.inject.Inject
@@ -41,21 +43,21 @@ class ExecutorHandler implements Handler {
                 return
             }
 
-            executeCommands(ds, transaction).then {
-                transaction.executed = true
-
-                // Notify ledger of result
+            executeCommands(ds, transaction).onError { e ->
+                log.info("Sending rolled back transaction to ledger")
+                println mapper.writeValueAsString(transaction)
+                client.post(config.ledger.remoteUrl.toURI(), { spec ->
+                    spec.body.text(mapper.writeValueAsString(transaction))
+                }).then {
+                    ctx.error(e)
+                }
+            }.then {
                 log.info("Updating ledger with execution result")
                 client.post(config.ledger.remoteUrl.toURI(), { spec ->
                     spec.body.text(mapper.writeValueAsString(transaction))
                 }).then {
-                    if(it.status != Status.OK) {
-                        log.error("Failed to update ledger with execution result for transaction $transaction.id")
-                    }
+                    ctx.response.send(mapper.writeValueAsString(transaction))
                 }
-
-                // Return transaction with result
-                ctx.response.send(mapper.writeValueAsString(transaction))
             }
         }
     }
@@ -81,31 +83,31 @@ class ExecutorHandler implements Handler {
         def txDs = Transaction.dataSource(ds)
         def tx = Transaction.create { ds.connection }
         tx.wrap {
-            Promise.sync {
-                try {
-                    transaction.queries.each { block ->
-                        try{
+            try {
+                transaction.queries.each { block ->
+                    try{
+                        log.info "Executing $block.query ..."
+                        if(block.query.toLowerCase().startsWith("select")){
+                            log.info('Saving result from Select query')
                             def result = txDs.connection
                                     .createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE)
                                     .executeQuery(block.query)
                             block.result = toMap(result)
-                            log.info "Executing $block.query ..."
-                            if(block.query.toLowerCase().startsWith("select")){
-                                log.info('Saving result from Select query')
-                            } else {
-                                txDs.connection.createStatement().execute(block.query)
-                            }
-                        } catch (Exception e) {
-                            block.resultError = e.message
-                            throw e
+                        } else {
+                            txDs.connection.createStatement().execute(block.query)
                         }
+                    } catch (Exception e) {
+                        block.resultError = e.message
+                        throw e
                     }
-                } catch (Exception e) {
-                    log.error("Failed to execute transaction $transaction.id, transaction rolled back", e)
-                    tx.rollback()
-                    transaction.rolledback = true
                 }
-                transaction
+                transaction.executed = true
+                Promise.sync { transaction }
+            } catch (Exception e) {
+                log.error("Failed to execute transaction $transaction.id, transaction rolled back", e)
+                tx.rollback()
+                transaction.rolledback = true
+                Promise.error(e)
             }
         }
     }

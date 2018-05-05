@@ -35,11 +35,11 @@ class BlockTransaction implements Serializable {
     }
 
     /**
-     * End the current transaction
+     * Commit the transaction to database
      *
      * @return
      */
-    void end() {
+    void commit() {
         completed = true
     }
 

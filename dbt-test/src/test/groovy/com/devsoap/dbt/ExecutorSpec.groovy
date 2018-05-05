@@ -18,7 +18,7 @@ class ExecutorSpec extends Specification {
         setup:
             def transaction = new BlockTransaction()
             transaction.execute("SELECT * FROM LOGS")
-            transaction.end()
+            transaction.commit()
         when:
             String json = aut.httpClient.requestSpec{ spec ->
                 spec.body.text(mapper.writeValueAsString(transaction))

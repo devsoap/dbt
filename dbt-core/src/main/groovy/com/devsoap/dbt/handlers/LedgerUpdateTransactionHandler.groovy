@@ -5,6 +5,7 @@ import com.devsoap.dbt.data.BlockTransaction
 import com.devsoap.dbt.services.LedgerService
 import com.fasterxml.jackson.databind.ObjectMapper
 import groovy.util.logging.Slf4j
+import ratpack.exec.Promise
 import ratpack.handling.Context
 import ratpack.handling.Handler
 import ratpack.http.HttpMethod
@@ -24,45 +25,55 @@ class LedgerUpdateTransactionHandler implements Handler {
 
     @Override
     void handle(Context ctx) throws Exception {
-        ctx.with {
-            if(ctx.request.method == HttpMethod.POST) {
-                if(!config.executor.remoteUrl) {
-                    throw new RuntimeException("Executor URL is not set, cannot update transaction")
-                }
+        if (ctx.request.method != HttpMethod.POST) {
+            ctx.next()
+            return
+        }
 
-                def ledgerService = get(LedgerService)
-                request.body.then { body ->
-                    def mapper = get(ObjectMapper)
-                    def transaction = mapper.readValue(body.text, BlockTransaction)
-                    log.info("Recieved transaction $transaction.id")
-                    ledgerService.fetchTransaction(transaction.id).then {
-                        if(it.present) {
-                            log.info "Transaction $transaction.id exists, updating transaction"
-                            ledgerService.updateTransaction(transaction).then {
-                                log.info("Transaction $it updated in ledger")
-                                if(transaction.completed && !transaction.executed){
-                                    log.info("Sending transaction $transaction.id to executor at $config.executor.remoteUrl")
-                                    redirect(config.executor.remoteUrl)
-                                } else {
-                                    render(Jackson.json(transaction))
-                                }
-                            }
-                        } else {
-                            log.info("Creating new transaction")
-                            ledgerService.newTransaction(transaction).then {
-                                log.info("Transaction $it added to ledger")
-                                if(transaction.completed && !transaction.executed){
-                                    log.info("Sending transaction $transaction.id to executor at $config.executor.remoteUrl")
-                                    redirect(config.executor.remoteUrl)
-                                } else {
-                                    render(Jackson.json(transaction))
-                                }
-                            }
-                        }
-                    }
-                }
+        if (!config.executor.remoteUrl) {
+            throw new RuntimeException("Executor URL is not set, cannot update transaction")
+        }
+
+        def ledgerService = ctx.get(LedgerService)
+        ctx.request.body.then { body ->
+            def mapper = ctx.get(ObjectMapper)
+            BlockTransaction transaction = mapper.readValue(body.text, BlockTransaction)
+            log.info("Recieved transaction $transaction.id")
+            ledgerService.fetchTransaction(transaction.id).then { Optional<BlockTransaction> t ->
+                t.present ? updateTransaction(ctx, transaction) : newTransaction(ctx, transaction)
+            }
+        }
+    }
+
+    private void updateTransaction(Context ctx, BlockTransaction transaction) {
+        def ledgerService = ctx.get(LedgerService)
+        log.info "Transaction $transaction.id exists, updating transaction"
+        ledgerService.updateTransaction(transaction).then {
+            log.info("Transaction $it updated in ledger")
+            if (transaction.completed & !(transaction.executed || transaction.rolledback)) {
+                log.info("Sending transaction $transaction.id to executor at $config.executor.remoteUrl")
+                ctx.redirect(config.executor.remoteUrl)
             } else {
-                next()
+                ctx.render(Jackson.json(transaction))
+            }
+        }
+    }
+
+    private void newTransaction(Context ctx, BlockTransaction transaction) {
+        if(transaction.executed || transaction.rolledback) {
+            log.error("Tried to create a already executed transaction $transaction.id")
+            throw new IllegalArgumentException("Cannot create a transaction with executed or rolledback status")
+        }
+
+        def ledgerService = ctx.get(LedgerService)
+        log.info("Creating new transaction")
+        ledgerService.newTransaction(transaction).then {
+            log.info("Transaction $it added to ledger")
+            if(transaction.completed){
+                log.info("Sending transaction $transaction.id to executor at $config.executor.remoteUrl")
+                ctx.redirect(config.executor.remoteUrl)
+            } else {
+                ctx.render(Jackson.json(transaction))
             }
         }
     }
