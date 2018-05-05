@@ -3,10 +3,12 @@
 This is a framework for working with SQL transactions in a distributed network. The framework allows you to compose SQL 
 transactions of multiple queries on different nodes and execute them later. 
 
-To ensure the reliability of the transactions a ledger using blockchain is used to keep track on ongoing transactions.
+To ensure the reliability of the transactions a ledger using blockchain is used to keep track on ongoing transactions and
+ensure queries within the transactions are consistent.
 
 
 ## DBT Core
+
 The core library containing the DBTModule to include in your Ratpack application. 
 
 The DBT module can be added like so:
