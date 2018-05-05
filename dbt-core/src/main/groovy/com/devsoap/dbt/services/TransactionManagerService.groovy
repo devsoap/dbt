@@ -55,13 +55,13 @@ class TransactionManagerService implements Service {
         httpClient.get(config.ledger.remoteUrl.toURI(), { spec ->
             spec.headers.add('X-Transaction-Id', transactionId)
         }).flatMap { response ->
+            if(response.status == Status.of(404)) {
+                throw new RuntimeException("Transaction with id '$transactionId' could not be found")
+            }
             if(response.status != Status.OK) {
-                throw new RuntimeException("Server returned ${response.statusCode} ${response.status.message}")
+                throw new RuntimeException("Ledger returned ${response.statusCode} ${response.status.message} for $transactionId")
             }
             def oldTransaction = mapper.readValue(response.body.text, BlockTransaction)
-            if(oldTransaction == null) {
-                throw new RuntimeException("Transaction with id $transactionId could not be found")
-            }
             if(oldTransaction.completed) {
                 throw new RuntimeException("Cannot modify a completed transaction")
             }

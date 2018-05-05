@@ -3,6 +3,7 @@ apply plugin: "org.flywaydb.flyway"
 dependencies {
     compile project(':dbt-core')
 
+    runtime ratpack.dependency('handlebars')
     runtime ratpack.dependency('h2')
     runtime ratpack.dependency('jdbc-tx')
 

@@ -82,17 +82,28 @@ class ExecutorHandler implements Handler {
         def tx = Transaction.create { ds.connection }
         tx.wrap {
             Promise.sync {
-                transaction.queries.each { block ->
-                    log.info "Executing $block.query ..."
-                    if(block.query.toLowerCase().startsWith("select")){
-                        log.info('Saving result from Select query')
-                        def result = txDs.connection
-                                .createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE)
-                                .executeQuery(block.query)
-                        block.result = toMap(result)
-                    } else {
-                        txDs.connection.createStatement().execute(block.query)
+                try {
+                    transaction.queries.each { block ->
+                        try{
+                            def result = txDs.connection
+                                    .createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE)
+                                    .executeQuery(block.query)
+                            block.result = toMap(result)
+                            log.info "Executing $block.query ..."
+                            if(block.query.toLowerCase().startsWith("select")){
+                                log.info('Saving result from Select query')
+                            } else {
+                                txDs.connection.createStatement().execute(block.query)
+                            }
+                        } catch (Exception e) {
+                            block.resultError = e.message
+                            throw e
+                        }
                     }
+                } catch (Exception e) {
+                    log.error("Failed to execute transaction $transaction.id, transaction rolled back", e)
+                    tx.rollback()
+                    transaction.rolledback = true
                 }
                 transaction
             }

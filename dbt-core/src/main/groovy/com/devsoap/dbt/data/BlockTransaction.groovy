@@ -1,7 +1,5 @@
 package com.devsoap.dbt.data
 
-import com.fasterxml.jackson.annotation.JsonValue
-import com.fasterxml.jackson.databind.JsonNode
 import groovy.transform.ToString
 
 import java.nio.charset.StandardCharsets
@@ -54,6 +52,7 @@ class BlockTransaction implements Serializable {
         long timeStamp
 
         Map<String, List> result
+        String resultError
 
         Query() {
             // For serialization
