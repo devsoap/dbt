@@ -72,5 +72,17 @@ ratpack {
         }
       }
     }
+
+    post('executeQuery') {
+      def transactionManager = get(TransactionManagerService)
+      parse(Form).then { Form form ->
+        def query = form.get('query')
+        transactionManager.execute {
+          it.query(query).complete()
+        } .then {
+          response.send(it.toString())
+        }
+      }
+    }
   }
 }

@@ -19,6 +19,7 @@
                 <input type="hidden" name="transactionId" id="transactionId" />
                 <input name="query" style="width:300px" placeholder="Add query here..." />
                 <button type="submit">Submit Query</button>
+                <button id="submitAndExecute">Submit&Execute Query</button>
             </form>
             <form id="executeTransactionForm" action='/'>
                 <input type="hidden" name="transactionId" id="transactionId" />
@@ -42,7 +43,7 @@
 
             function refreshLedger() {
                 $.get('/ledger', function(data) {
-                   editor.setValue(JSON.stringify(data, null, 2));
+                   editor.setValue(JSON.stringify(data.reverse(), null, 2));
                 });
             }
 
@@ -68,9 +69,20 @@
                    });
             }
 
+            function executeSingleQueryTransaction(event) {
+                event.preventDefault();
+                var queryData = $('form#addQueryForm').serialize();
+                $.post( '/executeQuery', queryData, function(data) {
+                    $('input#transactionId').val(null);
+                    $('button#executeTransactionButton').hide();
+                    refreshLedger();
+                }, 'json');
+            }
+
             $( "#addQueryForm" ).submit(addQueryToTransaction);
             $( "#executeTransactionForm" ).submit(executeTransaction);
             $('button#executeTransactionButton').hide();
+            $('button#submitAndExecute').click(executeSingleQueryTransaction);
             window.onload = refreshLedger();
         </script>
     </body>

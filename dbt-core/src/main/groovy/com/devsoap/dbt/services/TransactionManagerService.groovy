@@ -31,7 +31,13 @@ class TransactionManagerService implements Service {
         }
 
         def builder = new TransactionBuilder()
-        queryBuilder.build(builder)
+        try{
+            queryBuilder.build(builder)
+        } catch (Exception e) {
+            log.error('Failed to build transaction', e)
+            return Promise.error(e)
+        }
+
         def transaction = builder.build()
 
         log.info("Sending transaction $transaction.id to ledger at $config.ledger.remoteUrl")
@@ -39,6 +45,7 @@ class TransactionManagerService implements Service {
             spec.body.text(mapper.writeValueAsString(transaction))
         }).onError {
             log.error("Failed to send transaction $transaction.id to ledger $config.ledger.remoteUrl")
+            return Promise.error(it)
         }.map { response ->
             if(response.status == Status.OK) {
                 mapper.readTree(response.body.text)
@@ -68,7 +75,14 @@ class TransactionManagerService implements Service {
 
             log.info("Updating transaction $transactionId content with new query")
             def builder = new TransactionBuilder(oldTransaction)
-            queryBuilder.build(builder)
+
+            try {
+                queryBuilder.build(builder)
+            } catch (Exception e) {
+                log.error("Failed to update transaction", e)
+                return Promise.error(e)
+            }
+
             def transaction = builder.build()
 
             if(transaction.id != transactionId) {
@@ -80,6 +94,7 @@ class TransactionManagerService implements Service {
                 spec.body.text(mapper.writeValueAsString(transaction))
             }).onError {
                 log.error("Failed to send transaction $transaction.id to ledger $config.ledger.remoteUrl")
+                return Promise.error(it)
             }
         }.map { response ->
             mapper.readTree(response.body.text)
@@ -100,16 +115,21 @@ class TransactionManagerService implements Service {
             this.transaction = transaction
         }
 
-        void query(String sql){
+        TransactionBuilder query(String sql){
+            if(sql == null || sql == '' || sql.trim() == '') {
+                throw new IllegalArgumentException("SQL statement cannot be null")
+            }
             queries << sql
+            this
         }
 
         String id() {
             transaction.id
         }
 
-        void complete() {
+        TransactionBuilder complete() {
             transaction.end()
+            this
         }
 
         private BlockTransaction build() {
