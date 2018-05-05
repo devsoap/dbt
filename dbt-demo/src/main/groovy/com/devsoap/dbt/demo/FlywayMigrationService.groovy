@@ -13,9 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.devsoap.dbt.data
+package com.devsoap.dbt.demo
 
-class LedgerData implements Serializable {
+import org.flywaydb.core.Flyway
+import ratpack.service.Service
+import ratpack.service.StartEvent
 
-    List<BlockTransaction> transactions = new ArrayList<>()
+import javax.sql.DataSource
+
+class FlywayMigrationService implements Service {
+
+    @Override
+    void onStart(StartEvent event){
+        new Flyway(dataSource: event.registry.get(DataSource)).migrate()
+    }
 }
