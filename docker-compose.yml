@@ -1,13 +1,19 @@
 version: '2'
 
 services:
+
   executor:
     image: com.devsoap/dbt-executor
     container_name: dbt-executor
     environment:
-    - dbt.ledger.url=http://ledger:5050
+      - RATPACK_DBT__LEDGER__REMOTE_URL=http://ledger:5050/ledger
+    ports:
+      - "5051:5050"
+
   ledger:
     image: com.devsoap/dbt-ledger
     container_name: dbt-ledger
     environment:
-    - dbt.executor.url=http://executor:5050
+      - RATPACK_DBT__EXECUTOR__REMOTE_URL=http://executor:5051/executor
+    ports:
+      - "5050"
