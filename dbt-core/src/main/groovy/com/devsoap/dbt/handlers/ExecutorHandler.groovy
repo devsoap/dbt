@@ -22,6 +22,7 @@ import groovy.util.logging.Slf4j
 import ratpack.exec.Promise
 import ratpack.handling.Context
 import ratpack.handling.Handler
+import ratpack.http.HttpMethod
 import ratpack.http.Status
 import ratpack.http.client.HttpClient
 import ratpack.jdbctx.Transaction
@@ -46,32 +47,36 @@ class ExecutorHandler implements Handler {
 
     @Override
     void handle(Context ctx) throws Exception {
-        ctx.request.body.then { body ->
-            def mapper = ctx.get(ObjectMapper)
-            def ds = ctx.get(DataSource)
-            def transaction = mapper.readValue(body.text, BlockTransaction)
+        if(ctx.request.method == HttpMethod.POST) {
+            ctx.request.body.then { body ->
+                def mapper = ctx.get(ObjectMapper)
+                def ds = ctx.get(DataSource)
+                def transaction = mapper.readValue(body.text, BlockTransaction)
 
-            if(!validateChain(transaction)) {
-                ctx.response.status(Status.of(400, 'Transaction chain invalid'))
-                return
-            }
+                if(!validateChain(transaction)) {
+                    ctx.response.status(Status.of(400, 'Transaction chain invalid'))
+                    return
+                }
 
-            executeCommands(ds, transaction).onError { e ->
-                log.info("Sending rolled back transaction to ledger")
-                println mapper.writeValueAsString(transaction)
-                client.post(config.ledger.remoteUrl.toURI(), { spec ->
-                    spec.body.text(mapper.writeValueAsString(transaction))
-                }).then {
-                    ctx.error(e)
-                }
-            }.then {
-                log.info("Updating ledger with execution result")
-                client.post(config.ledger.remoteUrl.toURI(), { spec ->
-                    spec.body.text(mapper.writeValueAsString(transaction))
-                }).then {
-                    ctx.response.send(mapper.writeValueAsString(transaction))
+                executeCommands(ds, transaction).onError { e ->
+                    log.info("Sending rolled back transaction to ledger")
+                    println mapper.writeValueAsString(transaction)
+                    client.post(config.ledger.remoteUrl.toURI(), { spec ->
+                        spec.body.text(mapper.writeValueAsString(transaction))
+                    }).then {
+                        ctx.error(e)
+                    }
+                }.then {
+                    log.info("Updating ledger with execution result")
+                    client.post(config.ledger.remoteUrl.toURI(), { spec ->
+                        spec.body.text(mapper.writeValueAsString(transaction))
+                    }).then {
+                        ctx.response.send(mapper.writeValueAsString(transaction))
+                    }
                 }
             }
+        } else {
+            ctx.next()
         }
     }
 

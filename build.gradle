@@ -4,14 +4,15 @@ buildscript {
     }
     dependencies {
         classpath "io.ratpack:ratpack-gradle:1.5.1"
+        classpath 'se.transmode.gradle:gradle-docker:1.2'
     }
 }
 
 plugins {
     id 'idea'
     id 'groovy'
-    id "io.ratpack.ratpack-groovy" version "1.5.1"
-    id "org.flywaydb.flyway" version "5.0.7"
+    id "io.ratpack.ratpack-groovy" version "1.5.1" apply false
+    id "org.flywaydb.flyway" version "5.0.7" apply false
 }
 
 allprojects {
@@ -20,4 +21,8 @@ allprojects {
     repositories {
         jcenter()
     }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.7'
 }

@@ -1,4 +1,8 @@
 include 'dbt-core'
 include 'dbt-test'
 include 'dbt-demo'
+include 'docker-executor'
+include 'docker-ledger'
 
+project(':docker-executor').name = 'dbt-executor'
+project(':docker-ledger').name = 'dbt-ledger'

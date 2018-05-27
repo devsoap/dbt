@@ -27,6 +27,7 @@ import com.devsoap.dbt.services.LedgerService
 import com.devsoap.dbt.services.TransactionManagerService
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.inject.multibindings.Multibinder
+import groovy.json.JsonBuilder
 import groovy.util.logging.Slf4j
 import ratpack.guice.ConfigurableModule
 import ratpack.handling.HandlerDecorator
@@ -48,7 +49,6 @@ class DBTModule extends ConfigurableModule<DBTConfig> {
         bind(ExecutorHandler)
 
         bind(LedgerData)
-
         bind(LedgerService)
         bind(TransactionManagerService)
 
@@ -70,7 +70,7 @@ class DBTModule extends ConfigurableModule<DBTConfig> {
             config.executor.remoteUrl = "http://localhost:${serverConfig.port}/${config.executor.path}"
         }
         if(!config.ledger.remoteUrl) {
-            config.executor.remoteUrl = "http://localhost:${serverConfig.port}/${config.ledger.path}"
+            config.ledger.remoteUrl = "http://localhost:${serverConfig.port}/${config.ledger.path}"
         }
     }
 }

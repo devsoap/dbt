@@ -25,15 +25,19 @@ import ratpack.groovy.handling.GroovyChainAction
 class ExecutorChainAction extends GroovyChainAction {
 
     private final String executorPath
+    private final boolean enabled
 
     @Inject
     ExecutorChainAction(DBTConfig config) {
         executorPath = config.executor.path
+        enabled = config.executor.enabled
     }
 
     @Override
     void execute() throws Exception {
-        log.info("Registering executor at $executorPath")
+        if(!enabled) return
+
+        log.info("Registering executor at /$executorPath")
         path(executorPath, ExecutorHandler)
     }
 }

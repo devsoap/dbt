@@ -1,0 +1,22 @@
+apply plugin: 'docker'
+
+group 'com.devsoap'
+
+dependencies {
+    compile project(':dbt-core')
+    runtime ratpack.dependency('h2')
+    runtime ratpack.dependency('jdbc-tx')
+    runtime 'org.slf4j:slf4j-simple:1.7.25'
+}
+
+run {
+    environment('RATPACK_DBT__EXECUTOR__REMOTE_URL', findProperty('executorURL').toString() ?: "http://localhost:5050/executor")
+    environment('RATPACK_DBT__EXECUTOR__ENABLED', false)
+}
+
+distDocker {
+    registry = findProperty('dockerRegistry')
+    tagVersion = 'latest'
+    exposePort 5050
+    run.environment.each {key,value -> setEnvironment(key.toString(), value.toString())}
+}

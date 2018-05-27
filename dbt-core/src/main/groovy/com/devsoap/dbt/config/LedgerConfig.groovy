@@ -16,6 +16,7 @@
 package com.devsoap.dbt.config
 
 class LedgerConfig {
+    boolean enabled = true
     String path = 'ledger'
     String remoteUrl
 }

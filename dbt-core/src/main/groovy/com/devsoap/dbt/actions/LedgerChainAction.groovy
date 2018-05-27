@@ -28,15 +28,19 @@ import ratpack.handling.Handlers
 class LedgerChainAction extends GroovyChainAction {
 
     private final String ledgerPath
+    private final boolean enabled
 
     @Inject
     LedgerChainAction(DBTConfig config) {
         ledgerPath = config.ledger.path
+        enabled = config.ledger.enabled
     }
 
     @Override
     void execute() throws Exception {
-        log.info("Registering ledger at $ledgerPath")
+        if(!enabled) return
+
+        log.info("Registering ledger at /$ledgerPath")
         path(ledgerPath, Handlers.chain(
                 registry.get(LedgerGetTransactionHandler),
                 registry.get(LedgerUpdateTransactionHandler),
