@@ -16,4 +16,4 @@ services:
     environment:
       - RATPACK_DBT__EXECUTOR__REMOTE_URL=http://executor:5051/executor
     ports:
-      - "5050"
+      - "5050:5050"

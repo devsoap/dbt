@@ -53,16 +53,24 @@ class LedgerUpdateTransactionHandler implements Handler {
         ctx.request.body.then { body ->
             def mapper = ctx.get(ObjectMapper)
             BlockTransaction transaction = mapper.readValue(body.text, BlockTransaction)
-            log.info("Recieved transaction $transaction.id")
-            ledgerService.fetchTransaction(transaction.id).then { Optional<BlockTransaction> t ->
-                t.present ? updateTransaction(ctx, transaction) : newTransaction(ctx, transaction)
+            if(!transaction.id) {
+                log.info("Recieved null transaction id, creating new transaction")
+                newTransaction(ctx, transaction)
+            } else {
+                log.info("Recieved transaction $transaction.id, updating it")
+                ledgerService.fetchTransaction(transaction.id).then { Optional<BlockTransaction> t ->
+                    t.present ? updateTransaction(ctx, t.get(), transaction) : newTransaction(ctx,  transaction)
+                }
             }
         }
     }
 
-    private void updateTransaction(Context ctx, BlockTransaction transaction) {
+    private void updateTransaction(Context ctx, BlockTransaction oldTransaction, BlockTransaction newTransaction) {
+
+        log.info "Transaction $newTransaction.id exists, updating transaction"
+        def transaction = cloneTransaction(oldTransaction, newTransaction)
+
         def ledgerService = ctx.get(LedgerService)
-        log.info "Transaction $transaction.id exists, updating transaction"
         ledgerService.updateTransaction(transaction).then {
             log.info("Transaction $it updated in ledger")
             if (transaction.completed & !(transaction.executed || transaction.rolledback)) {
@@ -74,14 +82,12 @@ class LedgerUpdateTransactionHandler implements Handler {
         }
     }
 
-    private void newTransaction(Context ctx, BlockTransaction transaction) {
-        if(transaction.executed || transaction.rolledback) {
-            log.error("Tried to create a already executed transaction $transaction.id")
-            throw new IllegalArgumentException("Cannot create a transaction with executed or rolledback status")
-        }
+    private void newTransaction(Context ctx, BlockTransaction newTransaction) {
+
+        log.info("Creating new transaction")
+        def transaction = cloneTransaction(new BlockTransaction(), newTransaction)
 
         def ledgerService = ctx.get(LedgerService)
-        log.info("Creating new transaction")
         ledgerService.newTransaction(transaction).then {
             log.info("Transaction $it added to ledger")
             if(transaction.completed){
@@ -91,5 +97,24 @@ class LedgerUpdateTransactionHandler implements Handler {
                 ctx.render(Jackson.json(transaction))
             }
         }
+    }
+
+    private static BlockTransaction cloneTransaction(BlockTransaction oldTransaction, BlockTransaction newTransaction) {
+        def transaction = new BlockTransaction()
+        transaction.id = oldTransaction.id
+        transaction.executed = oldTransaction.executed
+        transaction.completed = oldTransaction.completed
+        transaction.rolledback = oldTransaction.rolledback
+
+        newTransaction.queries.each { q ->
+            def query = transaction.queries.isEmpty() ?
+                    new BlockTransaction.Query(oldTransaction, q.query) :
+                    new BlockTransaction.Query(transaction.queries.last(), q.query)
+            query.resultError = q.resultError
+            query.result = q.result
+            transaction.queries << query
+        }
+
+        transaction
     }
 }
