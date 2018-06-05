@@ -14,24 +14,27 @@ ensure queries within the transactions are consistent.
 The core library containing the DBTModule to include in your Ratpack application. 
 
 The DBT module can be added like so:
+
 ```groovy
 bindings {
     module (DBTModule) { config ->
-      config.ledger.remoteUrl = 'http://localhost:5050/ledger'
-      config.executor.remoteUrl = 'http://localhost:5050/executor'
+      config.ledger.remoteUrl = '<ledger host>:<ledger port>/ledger'
+      config.executor.remoteUrl = '<executor host>:<executor port>/executor'
     }
 }
 ```
 
-## DBT Demo
-
-Demo application for testing the transactions. 
-
-The demo application has a database with one table LOGS which you can use to insert and select data from.
-
-The demo can be run by running ``./gradlew :dbt-demo:run`` after which the demo is running on http://localhost:5050
-
-
 ## DBT Test
 
 The test module contains all the integration tests for the module. 
+
+
+### Docker
+
+There are two projects available for building the executor and the ledger as docker images. 
+
+* docker-ledger - Run the ledger as a docker image
+* docker-executor - Run the executor as a docker image
+
+For more information how to run and configure them see their corresponding READMEs.
+
