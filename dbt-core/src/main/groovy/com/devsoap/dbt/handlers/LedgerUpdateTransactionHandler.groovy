@@ -24,6 +24,8 @@ import ratpack.exec.Promise
 import ratpack.handling.Context
 import ratpack.handling.Handler
 import ratpack.http.HttpMethod
+import ratpack.http.Status
+import ratpack.http.client.HttpClient
 import ratpack.jackson.Jackson
 
 import javax.inject.Inject
@@ -32,10 +34,14 @@ import javax.inject.Inject
 class LedgerUpdateTransactionHandler implements Handler {
 
     private final DBTConfig config
+    private final HttpClient client
+    private final ObjectMapper mapper
 
     @Inject
-    LedgerUpdateTransactionHandler(DBTConfig config) {
+    LedgerUpdateTransactionHandler(DBTConfig config, HttpClient client, ObjectMapper mapper) {
         this.config = config
+        this.mapper = mapper
+        this.client = client
     }
 
     @Override
@@ -71,11 +77,18 @@ class LedgerUpdateTransactionHandler implements Handler {
         def transaction = cloneTransaction(oldTransaction, newTransaction)
 
         def ledgerService = ctx.get(LedgerService)
-        ledgerService.updateTransaction(transaction).then {
-            log.info("Transaction $it updated in ledger")
+        ledgerService.updateTransaction(transaction).then { id ->
+            log.info("Transaction $id updated in ledger")
             if (transaction.completed & !(transaction.executed || transaction.rolledback)) {
-                log.info("Sending transaction $transaction.id to executor at $config.executor.remoteUrl")
-                ctx.redirect(config.executor.remoteUrl)
+                log.info("Sending transaction $id to executor at $config.executor.remoteUrl")
+                client.post(config.executor.remoteUrl.toURI(), { spec ->
+                    spec.body.text(mapper.writeValueAsString(transaction))
+                }).onError { err ->
+                    log.error('Failed to reach executor', err)
+                    ctx.response.status(Status.of(404, 'Executor not found')).send()
+                }.then {
+                    ctx.response.send(it.body.text)
+                }
             } else {
                 ctx.render(Jackson.json(transaction))
             }
@@ -92,7 +105,14 @@ class LedgerUpdateTransactionHandler implements Handler {
             log.info("Transaction $it added to ledger")
             if(transaction.completed){
                 log.info("Sending transaction $transaction.id to executor at $config.executor.remoteUrl")
-                ctx.redirect(config.executor.remoteUrl)
+                client.post(config.executor.remoteUrl.toURI(), { spec ->
+                    spec.body.text(mapper.writeValueAsString(transaction))
+                }).onError { err ->
+                    log.error('Failed to reach executor', err)
+                    ctx.response.status(Status.of(404, 'Executor not found')).send()
+                }.then {
+                    ctx.response.send(it.body.text)
+                }
             } else {
                 ctx.render(Jackson.json(transaction))
             }
@@ -101,14 +121,14 @@ class LedgerUpdateTransactionHandler implements Handler {
 
     private static BlockTransaction cloneTransaction(BlockTransaction oldTransaction, BlockTransaction newTransaction) {
         def transaction = new BlockTransaction()
-        transaction.id = oldTransaction.id
-        transaction.executed = oldTransaction.executed
-        transaction.completed = oldTransaction.completed
-        transaction.rolledback = oldTransaction.rolledback
+        transaction.id = newTransaction.id
+        transaction.executed = newTransaction.executed
+        transaction.completed = newTransaction.completed
+        transaction.rolledback = newTransaction.rolledback
 
         newTransaction.queries.each { q ->
             def query = transaction.queries.isEmpty() ?
-                    new BlockTransaction.Query(oldTransaction, q.query) :
+                    new BlockTransaction.Query(transaction, q.query) :
                     new BlockTransaction.Query(transaction.queries.last(), q.query)
             query.resultError = q.resultError
             query.result = q.result

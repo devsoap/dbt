@@ -7,13 +7,24 @@ services:
     container_name: dbt-executor
     environment:
       - RATPACK_DBT__LEDGER__REMOTE_URL=http://ledger:5050/ledger
-    ports:
-      - "5051:5050"
+      - RATPACK_DEVELOPMENT=false
+    networks:
+      dbt:
+        aliases:
+          - executor
 
   ledger:
     image: com.devsoap/dbt-ledger
     container_name: dbt-ledger
     environment:
-      - RATPACK_DBT__EXECUTOR__REMOTE_URL=http://executor:5051/executor
+      - RATPACK_DBT__EXECUTOR__REMOTE_URL=http://executor:5050/executor
+      - RATPACK_DEVELOPMENT=false
     ports:
       - "5050:5050"
+    networks:
+      dbt:
+        aliases:
+          - ledger
+
+networks:
+  dbt:

@@ -16,6 +16,7 @@
 package com.devsoap.dbt.actions
 
 import com.devsoap.dbt.config.DBTConfig
+import com.devsoap.dbt.handlers.ConfigInfoHandler
 import com.devsoap.dbt.handlers.LedgerGetTransactionHandler
 import com.devsoap.dbt.handlers.LedgerListTransactionsHandler
 import com.devsoap.dbt.handlers.LedgerUpdateTransactionHandler
@@ -46,5 +47,6 @@ class LedgerChainAction extends GroovyChainAction {
                 registry.get(LedgerUpdateTransactionHandler),
                 registry.get(LedgerListTransactionsHandler)
         ))
+        path("$ledgerPath/config", ConfigInfoHandler)
     }
 }

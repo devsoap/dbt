@@ -53,25 +53,35 @@ class ExecutorHandler implements Handler {
                 def ds = ctx.get(DataSource)
                 def transaction = mapper.readValue(body.text, BlockTransaction)
 
+                log.info('Recieved transaction {} for execution', transaction.id)
+
                 if(!validateChain(transaction)) {
-                    ctx.response.status(Status.of(400, 'Transaction chain invalid'))
+                    log.error("Transaction chain validation failed for transaction {}", transaction.id)
+                    ctx.response.status(Status.of(400, 'Transaction chain invalid')).send()
                     return
                 }
 
+                log.info('Executing transaction {} on {}', transaction.id, ds)
                 executeCommands(ds, transaction).onError { e ->
                     log.info("Sending rolled back transaction to ledger")
-                    println mapper.writeValueAsString(transaction)
                     client.post(config.ledger.remoteUrl.toURI(), { spec ->
                         spec.body.text(mapper.writeValueAsString(transaction))
-                    }).then {
-                        ctx.error(e)
+                    }).onError { ee ->
+                        log.error('Failed to reach ledger', ee)
+                        ctx.response.status(Status.of(404, 'Ledger not found')).send()
+                    }.then {
+                        log.error('Transaction {} rolled back', transaction.id)
+                        ctx.response.status(Status.of(505, 'Transaction rollback')).send()
                     }
                 }.then {
                     log.info("Updating ledger with execution result")
                     client.post(config.ledger.remoteUrl.toURI(), { spec ->
                         spec.body.text(mapper.writeValueAsString(transaction))
-                    }).then {
-                        ctx.response.send(mapper.writeValueAsString(transaction))
+                    }).onError { ee ->
+                        log.error('Failed to reach ledger', ee)
+                        ctx.response.status(Status.of(404, 'Ledger not found')).send()
+                    }.then {
+                        ctx.response.send(it.body.text)
                     }
                 }
             }

@@ -20,6 +20,7 @@ import com.devsoap.dbt.actions.LedgerChainAction
 import com.devsoap.dbt.config.DBTConfig
 import com.devsoap.dbt.data.LedgerData
 import com.devsoap.dbt.handlers.ExecutorHandler
+import com.devsoap.dbt.handlers.ConfigInfoHandler
 import com.devsoap.dbt.handlers.LedgerGetTransactionHandler
 import com.devsoap.dbt.handlers.LedgerListTransactionsHandler
 import com.devsoap.dbt.handlers.LedgerUpdateTransactionHandler
@@ -27,7 +28,6 @@ import com.devsoap.dbt.services.LedgerService
 import com.devsoap.dbt.services.TransactionManagerService
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.inject.multibindings.Multibinder
-import groovy.json.JsonBuilder
 import groovy.util.logging.Slf4j
 import ratpack.guice.ConfigurableModule
 import ratpack.handling.HandlerDecorator
@@ -47,6 +47,7 @@ class DBTModule extends ConfigurableModule<DBTConfig> {
 
         bind(ExecutorChainAction)
         bind(ExecutorHandler)
+        bind(ConfigInfoHandler)
 
         bind(LedgerData)
         bind(LedgerService)
