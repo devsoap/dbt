@@ -15,6 +15,7 @@
  */
 package com.devsoap.dbt.data
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import groovy.transform.ToString
 
 import java.nio.charset.StandardCharsets
@@ -25,6 +26,7 @@ class BlockTransaction implements Serializable {
 
     String id = UUID.randomUUID().toString().replace('-','')
 
+    @JsonProperty(required = true)
     List<Query> queries = []
 
     boolean completed = false
@@ -61,6 +63,8 @@ class BlockTransaction implements Serializable {
     // A block in the chain
     @ToString
     static final class Query implements Serializable {
+
+        @JsonProperty(required = true)
         String query
         String id
         String parent

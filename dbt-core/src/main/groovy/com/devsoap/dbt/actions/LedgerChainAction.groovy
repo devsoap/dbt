@@ -17,9 +17,11 @@ package com.devsoap.dbt.actions
 
 import com.devsoap.dbt.config.DBTConfig
 import com.devsoap.dbt.handlers.ConfigInfoHandler
+import com.devsoap.dbt.handlers.JsonSchemaHandler
 import com.devsoap.dbt.handlers.LedgerGetTransactionHandler
 import com.devsoap.dbt.handlers.LedgerListTransactionsHandler
 import com.devsoap.dbt.handlers.LedgerUpdateTransactionHandler
+import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator
 import com.google.inject.Inject
 import groovy.util.logging.Slf4j
 import ratpack.groovy.handling.GroovyChainAction
@@ -48,5 +50,6 @@ class LedgerChainAction extends GroovyChainAction {
                 registry.get(LedgerListTransactionsHandler)
         ))
         path("$ledgerPath/config", ConfigInfoHandler)
+        path("$ledgerPath/schema", JsonSchemaHandler)
     }
 }

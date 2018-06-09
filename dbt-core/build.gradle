@@ -1,3 +1,4 @@
 dependencies {
     compile ratpack.dependency('jdbc-tx')
+    compile 'com.fasterxml.jackson.module:jackson-module-jsonSchema:2.9.0'
 }

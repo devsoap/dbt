@@ -18,6 +18,7 @@ package com.devsoap.dbt.actions
 import com.devsoap.dbt.config.DBTConfig
 import com.devsoap.dbt.handlers.ExecutorHandler
 import com.devsoap.dbt.handlers.ConfigInfoHandler
+import com.devsoap.dbt.handlers.JsonSchemaHandler
 import com.google.inject.Inject
 import groovy.util.logging.Slf4j
 import ratpack.groovy.handling.GroovyChainAction
@@ -42,5 +43,6 @@ class ExecutorChainAction extends GroovyChainAction {
         log.info("Registering executor at /$executorPath")
         path(executorPath, ExecutorHandler)
         path("$executorPath/config", ConfigInfoHandler)
+        path("$executorPath/schema", JsonSchemaHandler)
     }
 }

@@ -21,6 +21,7 @@ import com.devsoap.dbt.config.DBTConfig
 import com.devsoap.dbt.data.LedgerData
 import com.devsoap.dbt.handlers.ExecutorHandler
 import com.devsoap.dbt.handlers.ConfigInfoHandler
+import com.devsoap.dbt.handlers.JsonSchemaHandler
 import com.devsoap.dbt.handlers.LedgerGetTransactionHandler
 import com.devsoap.dbt.handlers.LedgerListTransactionsHandler
 import com.devsoap.dbt.handlers.LedgerUpdateTransactionHandler
@@ -47,11 +48,13 @@ class DBTModule extends ConfigurableModule<DBTConfig> {
 
         bind(ExecutorChainAction)
         bind(ExecutorHandler)
-        bind(ConfigInfoHandler)
 
         bind(LedgerData)
         bind(LedgerService)
         bind(TransactionManagerService)
+
+        bind(ConfigInfoHandler)
+        bind(JsonSchemaHandler)
 
         Multibinder.newSetBinder(binder(), HandlerDecorator).addBinding()
                 .toInstance(HandlerDecorator.prependHandlers(LedgerChainAction))
