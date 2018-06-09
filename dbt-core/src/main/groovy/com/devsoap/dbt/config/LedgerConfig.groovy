@@ -16,7 +16,19 @@
 package com.devsoap.dbt.config
 
 class LedgerConfig {
+
+    /**
+     * Are the ledger endpoints active
+     */
     boolean enabled = true
+
+    /**
+     * The context path of the ledger, by default /ledger
+     */
     String path = 'ledger'
+
+    /**
+     * If the ledger is disabled, then this specifies the remote url of the ledger the executors use
+     */
     String remoteUrl
 }
