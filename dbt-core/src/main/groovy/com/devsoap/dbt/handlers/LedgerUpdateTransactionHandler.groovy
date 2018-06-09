@@ -17,6 +17,7 @@ package com.devsoap.dbt.handlers
 
 import com.devsoap.dbt.config.DBTConfig
 import com.devsoap.dbt.data.BlockTransaction
+import com.devsoap.dbt.data.Query
 import com.devsoap.dbt.services.LedgerService
 import com.fasterxml.jackson.databind.ObjectMapper
 import groovy.util.logging.Slf4j
@@ -128,8 +129,8 @@ class LedgerUpdateTransactionHandler implements Handler {
 
         newTransaction.queries.each { q ->
             def query = transaction.queries.isEmpty() ?
-                    new BlockTransaction.Query(transaction, q.query) :
-                    new BlockTransaction.Query(transaction.queries.last(), q.query)
+                    new Query(transaction, q.query) :
+                    new Query(transaction.queries.last(), q.query)
             query.resultError = q.resultError
             query.result = q.result
             transaction.queries << query

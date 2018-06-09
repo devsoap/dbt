@@ -1,8 +1,7 @@
-import com.devsoap.dbt.DBTModule
-import org.h2.jdbcx.JdbcDataSource
+import com.devsoap.dbt.modules.DBTLedgerModule
+import com.mongodb.MongoClient
+import com.mongodb.MongoClientURI
 import org.slf4j.LoggerFactory
-
-import javax.sql.DataSource
 
 import static ratpack.groovy.Groovy.ratpack
 
@@ -15,9 +14,9 @@ ratpack {
     }
 
     bindings {
-        module (DBTModule)  { config ->
-            log.info "Executor available at $config.executor.remoteUrl"
-            log.info "Ledger available at $config.ledger.remoteUrl"
+        module (DBTLedgerModule)  { config ->
+            log.info("Using Mongo database at $config.ledger.databaseUrl")
+            bindInstance(MongoClient, new MongoClient(new MongoClientURI(config.ledger.databaseUrl)))
         }
     }
 }

@@ -2,6 +2,22 @@ version: '2'
 
 services:
 
+  ledger:
+    image: com.devsoap/dbt-ledger
+    container_name: dbt-ledger
+    environment:
+      - RATPACK_DBT__EXECUTOR__REMOTE_URL=http://executor:5050/executor
+      - RATPACK_DBT__LEDGER__DATABASE_URL=mongodb://ledger-db/dbt
+      - RATPACK_DEVELOPMENT=false
+    ports:
+      - "5050:5050"
+    depends_on:
+      - ledger-db
+    networks:
+      dbt:
+        aliases:
+          - ledger
+
   executor:
     image: com.devsoap/dbt-executor
     container_name: dbt-executor
@@ -13,18 +29,17 @@ services:
         aliases:
           - executor
 
-  ledger:
-    image: com.devsoap/dbt-ledger
-    container_name: dbt-ledger
-    environment:
-      - RATPACK_DBT__EXECUTOR__REMOTE_URL=http://executor:5050/executor
-      - RATPACK_DEVELOPMENT=false
-    ports:
-      - "5050:5050"
-    networks:
+  ledger-db:
+     image: mongo:latest
+     container_name: dbt-ledger-db
+     ports:
+       - "27017:27017"
+     environment:
+       - MONGO_INITDB_DATABASE=dbt
+     networks:
       dbt:
         aliases:
-          - ledger
+          - ledger-db
 
 networks:
   dbt:

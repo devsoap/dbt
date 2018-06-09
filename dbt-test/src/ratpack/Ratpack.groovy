@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import com.devsoap.dbt.DBTModule
+
 import com.devsoap.dbt.config.DBTConfig
+import com.devsoap.dbt.modules.DBTExecutorModule
+import com.devsoap.dbt.modules.DBTLedgerModule
 import org.flywaydb.core.Flyway
 import org.h2.jdbcx.JdbcDataSource
 import ratpack.service.Service
@@ -33,9 +35,12 @@ ratpack {
 
   bindings {
 
-    module (DBTModule) {
-      it.ledger.remoteUrl = 'http://localhost:8888/ledger'
+    module (DBTLedgerModule) {
       it.executor.remoteUrl = 'http://localhost:8888/executor'
+    }
+
+    module (DBTExecutorModule) {
+      it.ledger.remoteUrl = 'http://localhost:8888/ledger'
     }
 
     bindInstance(DataSource, new JdbcDataSource(url: 'jdbc:h2:mem:dbtdb;DB_CLOSE_DELAY=-1', user: ''))

@@ -1,4 +1,6 @@
 dependencies {
     compile ratpack.dependency('jdbc-tx')
+    //compile 'org.mongodb:mongo-java-driver:3.7.1'
+    compile 'com.gmongo:gmongo:1.2'
     compile 'com.fasterxml.jackson.module:jackson-module-jsonSchema:2.9.0'
 }

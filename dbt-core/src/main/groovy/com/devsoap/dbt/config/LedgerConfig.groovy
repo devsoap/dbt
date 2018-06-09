@@ -31,4 +31,9 @@ class LedgerConfig {
      * If the ledger is disabled, then this specifies the remote url of the ledger the executors use
      */
     String remoteUrl
+
+    /**
+     * Database JDBC Url
+     */
+    String databaseUrl
 }

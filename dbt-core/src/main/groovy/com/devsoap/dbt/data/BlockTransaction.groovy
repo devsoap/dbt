@@ -59,42 +59,4 @@ class BlockTransaction implements Serializable {
     void commit() {
         completed = true
     }
-
-    // A block in the chain
-    @ToString
-    static final class Query implements Serializable {
-
-        @JsonProperty(required = true)
-        String query
-        String id
-        String parent
-        long timeStamp
-
-        Map<String, List> result
-        String resultError
-
-        Query() {
-            // For serialization
-        }
-
-        Query(Query previous, String query) {
-            this.query = query
-            timeStamp = new Date().getTime()
-            parent = previous.id
-            id = generateHash()
-        }
-
-        Query(BlockTransaction transaction, String query) {
-            this.query = query
-            timeStamp = new Date().getTime()
-            parent = transaction.id
-            id = generateHash()
-        }
-
-        final String generateHash() {
-            def digest = MessageDigest.getInstance('SHA-256')
-            def hash = digest.digest("${parent?:''}$timeStamp$query".getBytes(StandardCharsets.UTF_8))
-            hash.encodeHex().toString()
-        }
-    }
 }

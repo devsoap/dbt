@@ -140,7 +140,7 @@ class ExecutorHandler implements Handler {
         }
     }
 
-    private static Map toMap(ResultSet resultSet) {
+    private static Map<String,List<String>> toMap(ResultSet resultSet) {
         def map = [:]
 
         if(resultSet.last()) {
@@ -156,7 +156,7 @@ class ExecutorHandler implements Handler {
 
                 resultSet.beforeFirst()
                 while(resultSet.next()) {
-                   columnValues << resultSet.getObject(columnIndex)
+                   columnValues << resultSet.getObject(columnIndex).toString()
                 }
             }
         }

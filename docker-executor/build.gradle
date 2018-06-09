@@ -11,7 +11,6 @@ dependencies {
 
 run {
     environment('RATPACK_DBT__LEDGER__REMOTE_URL', findProperty('ledgerURL').toString() ?: "http://localhost:5050/ledger")
-    environment('RATPACK_DBT__LEDGER__ENABLED', false)
 }
 
 distDocker {

@@ -1,4 +1,4 @@
-import com.devsoap.dbt.DBTModule
+import com.devsoap.dbt.modules.DBTExecutorModule
 import org.h2.jdbcx.JdbcDataSource
 import org.slf4j.LoggerFactory
 
@@ -16,7 +16,7 @@ ratpack {
 
     bindings {
         bindInstance(DataSource, new JdbcDataSource(url: 'jdbc:h2:mem:dbtdb;DB_CLOSE_DELAY=-1', user: ''))
-        module (DBTModule)  { config ->
+        module (DBTExecutorModule)  { config ->
             log.info "Executor available at $config.executor.remoteUrl"
             log.info "Ledger available at $config.ledger.remoteUrl"
         }
