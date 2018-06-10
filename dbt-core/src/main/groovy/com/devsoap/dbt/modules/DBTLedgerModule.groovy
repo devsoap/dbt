@@ -20,7 +20,8 @@ class DBTLedgerModule extends DBTModule {
         bind(LedgerGetTransactionHandler)
         bind(LedgerListTransactionsHandler)
         bind(LedgerUpdateTransactionHandler)
-        bind(LedgerService)
+
+        requireBinding(LedgerService)
 
         Multibinder.newSetBinder(binder(), HandlerDecorator).addBinding()
                 .toInstance(HandlerDecorator.prependHandlers(LedgerChainAction))

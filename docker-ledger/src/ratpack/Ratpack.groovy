@@ -1,4 +1,6 @@
 import com.devsoap.dbt.modules.DBTLedgerModule
+import com.devsoap.dbt.services.LedgerService
+import com.devsoap.dbt.services.MongoLedgerService
 import com.mongodb.MongoClient
 import com.mongodb.MongoClientURI
 import org.slf4j.LoggerFactory
@@ -14,9 +16,7 @@ ratpack {
     }
 
     bindings {
-        module (DBTLedgerModule)  { config ->
-            log.info("Using Mongo database at $config.ledger.databaseUrl")
-            bindInstance(MongoClient, new MongoClient(new MongoClientURI(config.ledger.databaseUrl)))
-        }
+        bind(LedgerService, MongoLedgerService)
+        module (DBTLedgerModule)
     }
 }

@@ -17,6 +17,8 @@
 import com.devsoap.dbt.config.DBTConfig
 import com.devsoap.dbt.modules.DBTExecutorModule
 import com.devsoap.dbt.modules.DBTLedgerModule
+import com.devsoap.dbt.services.InMemoryLedgerService
+import com.devsoap.dbt.services.LedgerService
 import org.flywaydb.core.Flyway
 import org.h2.jdbcx.JdbcDataSource
 import ratpack.service.Service
@@ -35,16 +37,14 @@ ratpack {
 
   bindings {
 
-    module (DBTLedgerModule) {
-      it.executor.remoteUrl = 'http://localhost:8888/executor'
-    }
+    // Configure Ledger
+    bind(LedgerService, InMemoryLedgerService)
+    module (DBTLedgerModule)
 
-    module (DBTExecutorModule) {
-      it.ledger.remoteUrl = 'http://localhost:8888/ledger'
-    }
-
+    // Configure executor
     bindInstance(DataSource, new JdbcDataSource(url: 'jdbc:h2:mem:dbtdb;DB_CLOSE_DELAY=-1', user: ''))
     bind FlywayMigrationService
+    module (DBTExecutorModule)
   }
 }
 

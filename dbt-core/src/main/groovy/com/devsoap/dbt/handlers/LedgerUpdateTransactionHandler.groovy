@@ -19,9 +19,9 @@ import com.devsoap.dbt.config.DBTConfig
 import com.devsoap.dbt.data.BlockTransaction
 import com.devsoap.dbt.data.Query
 import com.devsoap.dbt.services.LedgerService
+import com.devsoap.dbt.services.MongoLedgerService
 import com.fasterxml.jackson.databind.ObjectMapper
 import groovy.util.logging.Slf4j
-import ratpack.exec.Promise
 import ratpack.handling.Context
 import ratpack.handling.Handler
 import ratpack.http.HttpMethod

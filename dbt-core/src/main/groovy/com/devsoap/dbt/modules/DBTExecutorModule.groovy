@@ -7,6 +7,8 @@ import com.google.inject.multibindings.Multibinder
 import ratpack.handling.HandlerDecorator
 import ratpack.server.ServerConfig
 
+import javax.sql.DataSource
+
 class DBTExecutorModule extends DBTModule {
 
     @Override
@@ -15,6 +17,8 @@ class DBTExecutorModule extends DBTModule {
 
         bind(ExecutorChainAction)
         bind(ExecutorHandler)
+
+        requireBinding(DataSource)
 
         Multibinder.newSetBinder(binder(), HandlerDecorator).addBinding()
                 .toInstance(HandlerDecorator.prependHandlers(ExecutorChainAction))
